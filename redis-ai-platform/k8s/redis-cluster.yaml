@@ -1,0 +1,162 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: redis-ai-platform
+data:
+  redis.conf: |
+    # Redis configuration for AI Platform
+    port 6379
+    bind 0.0.0.0
+    protected-mode no
+    
+    # Memory management
+    maxmemory 2gb
+    maxmemory-policy allkeys-lru
+    
+    # Persistence
+    save 900 1
+    save 300 10
+    save 60 10000
+    
+    # Redis Stack modules
+    loadmodule /opt/redis-stack/lib/redisearch.so
+    loadmodule /opt/redis-stack/lib/redistimeseries.so
+    loadmodule /opt/redis-stack/lib/redisjson.so
+    
+    # Logging
+    loglevel notice
+    logfile ""
+    
+    # Network
+    tcp-keepalive 300
+    timeout 0
+    
+    # Security
+    requirepass ${REDIS_PASSWORD}
+    
+    # Performance
+    tcp-backlog 511
+    databases 16
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-secret
+  namespace: redis-ai-platform
+type: Opaque
+data:
+  password: cmVkaXMtYWktcGxhdGZvcm0tMjAyNA== # base64 encoded password
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-cluster
+  namespace: redis-ai-platform
+  labels:
+    app: redis-cluster
+    component: database
+spec:
+  serviceName: redis-cluster-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis-cluster
+  template:
+    metadata:
+      labels:
+        app: redis-cluster
+        component: database
+    spec:
+      containers:
+      - name: redis
+        image: redis/redis-stack-server:7.2.0-v8
+        ports:
+        - containerPort: 6379
+          name: redis
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: password
+        command:
+        - redis-server
+        - /etc/redis/redis.conf
+        volumeMounts:
+        - name: redis-config
+          mountPath: /etc/redis
+        - name: redis-data
+          mountPath: /data
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --no-auth-warning
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --no-auth-warning
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: redis-config
+        configMap:
+          name: redis-config
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster-headless
+  namespace: redis-ai-platform
+  labels:
+    app: redis-cluster
+spec:
+  clusterIP: None
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: redis
+  selector:
+    app: redis-cluster
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster
+  namespace: redis-ai-platform
+  labels:
+    app: redis-cluster
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: redis
+  selector:
+    app: redis-cluster

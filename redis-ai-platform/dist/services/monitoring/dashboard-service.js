@@ -1,0 +1,92 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+nimport;
+{
+    logger;
+}
+from;
+'../../utils/logger';
+nimport;
+{
+    n;
+    DashboardChart, ;
+    n;
+    MetricQuery, ;
+    n;
+    MetricResult, ;
+    n;
+    MonitoringConfig, ;
+    n;
+    SystemMetrics, ;
+    n;
+    PerformanceMetrics, ;
+    n;
+    HealthStatus, ;
+    n;
+}
+from;
+'./types';
+nimport;
+{
+    MetricsCollector;
+}
+from;
+'./metrics-collector';
+nimport;
+{
+    HealthChecker;
+}
+from;
+'./health-checker';
+nimport;
+{
+    AlertManager;
+}
+from;
+'./alert-manager';
+nimport;
+{
+    TracingService;
+}
+from;
+'./tracing-service';
+n;
+nexport;
+class DashboardService {
+    n;
+    redis;
+    n;
+    config;
+    n;
+    metricsCollector;
+    n;
+    healthChecker;
+    n;
+    alertManager;
+    n;
+    tracingService;
+    n;
+    refreshInterval = null;
+    n;
+    dashboardData = new Map();
+    n;
+    n;
+    constructor(n, redis, n, config, n, metricsCollector, n, healthChecker, n, alertManager, n, tracingService, n) { n; this.redis = redis; n; this.config = config; n; this.metricsCollector = metricsCollector; n; this.healthChecker = healthChecker; n; this.alertManager = alertManager; n; this.tracingService = tracingService; n; n; if (config.dashboard.enabled) {
+        n;
+        this.startDashboardRefresh();
+        n;
+    } n; }
+    n;
+    n;
+    startDashboardRefresh() { n; this.refreshInterval = setInterval(async () => { n; try {
+        n;
+        await this.refreshDashboardData();
+        n;
+    }
+    catch (error) {
+        n;
+        logger.error('Failed to refresh dashboard data:', error);
+        n;
+    } n; }, this.config.dashboard.refreshInterval * 1000); n; n; }
+} // Initial refresh\n    this.refreshDashboardData();\n\n    logger.info('Dashboard service started');\n  }\n\n  private async refreshDashboardData(): Promise<void> {\n    const now = Date.now();\n    const timeRanges = {\n      '1h': { start: now - 3600000, end: now },\n      '24h': { start: now - 86400000, end: now },\n      '7d': { start: now - 604800000, end: now },\n    };\n\n    // Refresh system overview\n    await this.refreshSystemOverview(timeRanges);\n    \n    // Refresh performance metrics\n    await this.refreshPerformanceMetrics(timeRanges);\n    \n    // Refresh AI model metrics\n    await this.refreshAIModelMetrics(timeRanges);\n    \n    // Refresh vector search metrics\n    await this.refreshVectorSearchMetrics(timeRanges);\n    \n    // Refresh workspace metrics\n    await this.refreshWorkspaceMetrics(timeRanges);\n    \n    // Refresh alerts and health\n    await this.refreshAlertsAndHealth();\n    \n    // Refresh tracing data\n    await this.refreshTracingData(timeRanges);\n\n    logger.debug('Dashboard data refreshed');\n  }\n\n  private async refreshSystemOverview(timeRanges: any): Promise<void> {\n    try {\n      const systemOverview = {\n        timestamp: Date.now(),\n        uptime: process.uptime(),\n        version: process.env.npm_package_version || '1.0.0',\n        environment: process.env.NODE_ENV || 'development',\n        metrics: {\n          '1h': await this.getSystemMetricsSummary(timeRanges['1h']),\n          '24h': await this.getSystemMetricsSummary(timeRanges['24h']),\n          '7d': await this.getSystemMetricsSummary(timeRanges['7d']),\n        },\n        current: await this.getCurrentSystemMetrics(),\n      };\n\n      this.dashboardData.set('system_overview', systemOverview);\n      \n    } catch (error) {\n      logger.error('Failed to refresh system overview:', error);\n    }\n  }\n\n  private async refreshPerformanceMetrics(timeRanges: any): Promise<void> {\n    try {\n      const performanceMetrics = {\n        timestamp: Date.now(),\n        responseTime: {\n          '1h': await this.metricsCollector.queryMetrics({\n            metric: 'performance',\n            timeRange: timeRanges['1h'],\n            aggregation: 'avg',\n            interval: 300, // 5 minutes\n          }),\n          '24h': await this.metricsCollector.queryMetrics({\n            metric: 'performance',\n            timeRange: timeRanges['24h'],\n            aggregation: 'avg',\n            interval: 3600, // 1 hour\n          }),\n        },\n        throughput: await this.getThroughputMetrics(timeRanges),\n        errorRate: await this.getErrorRateMetrics(timeRanges),\n        topEndpoints: await this.getTopEndpoints(timeRanges['1h']),\n      };\n\n      this.dashboardData.set('performance_metrics', performanceMetrics);\n      \n    } catch (error) {\n      logger.error('Failed to refresh performance metrics:', error);\n    }\n  }\n\n  private async refreshAIModelMetrics(timeRanges: any): Promise<void> {\n    try {\n      const aiModelMetrics = {\n        timestamp: Date.now(),\n        modelPerformance: await this.getModelPerformanceMetrics(timeRanges),\n        modelUsage: await this.getModelUsageMetrics(timeRanges),\n        costAnalysis: await this.getModelCostAnalysis(timeRanges),\n        routingEfficiency: await this.getRoutingEfficiencyMetrics(timeRanges),\n      };\n\n      this.dashboardData.set('ai_model_metrics', aiModelMetrics);\n      \n    } catch (error) {\n      logger.error('Failed to refresh AI model metrics:', error);\n    }\n  }\n\n  private async refreshVectorSearchMetrics(timeRanges: any): Promise<void> {\n    try {\n      const vectorSearchMetrics = {\n        timestamp: Date.now(),\n        searchPerformance: await this.getVectorSearchPerformance(timeRanges),\n        indexHealth: await this.getVectorIndexHealth(),\n        queryPatterns: await this.getQueryPatterns(timeRanges['24h']),\n        cacheEfficiency: await this.getCacheEfficiencyMetrics(timeRanges),\n      };\n\n      this.dashboardData.set('vector_search_metrics', vectorSearchMetrics);\n      \n    } catch (error) {\n      logger.error('Failed to refresh vector search metrics:', error);\n    }\n  }\n\n  private async refreshWorkspaceMetrics(timeRanges: any): Promise<void> {\n    try {\n      const workspaceMetrics = {\n        timestamp: Date.now(),\n        activeWorkspaces: await this.getActiveWorkspaceCount(),\n        collaborationActivity: await this.getCollaborationActivity(timeRanges),\n        knowledgeGrowth: await this.getKnowledgeGrowthMetrics(timeRanges),\n        userEngagement: await this.getUserEngagementMetrics(timeRanges),\n      };\n\n      this.dashboardData.set('workspace_metrics', workspaceMetrics);\n      \n    } catch (error) {\n      logger.error('Failed to refresh workspace metrics:', error);\n    }\n  }\n\n  private async refreshAlertsAndHealth(): Promise<void> {\n    try {\n      const alertsAndHealth = {\n        timestamp: Date.now(),\n        activeAlerts: await this.alertManager.getActiveAlerts(),\n        healthStatus: await this.healthChecker.getHealthStatus(),\n        alertStats: await this.alertManager.getAlertStats({\n          start: Date.now() - 86400000, // 24 hours\n          end: Date.now(),\n        }),\n        systemHealth: await this.getSystemHealthSummary(),\n      };\n\n      this.dashboardData.set('alerts_and_health', alertsAndHealth);\n      \n    } catch (error) {\n      logger.error('Failed to refresh alerts and health:', error);\n    }\n  }\n\n  private async refreshTracingData(timeRanges: any): Promise<void> {\n    try {\n      const tracingData = {\n        timestamp: Date.now(),\n        traceStats: await this.tracingService.getTraceStats(timeRanges['1h']),\n        serviceMap: await this.tracingService.getServiceMap(timeRanges['1h']),\n        slowestTraces: await this.getSlowestTraces(timeRanges['1h']),\n        errorTraces: await this.getErrorTraces(timeRanges['1h']),\n      };\n\n      this.dashboardData.set('tracing_data', tracingData);\n      \n    } catch (error) {\n      logger.error('Failed to refresh tracing data:', error);\n    }\n  }\n\n  public async getDashboardData(section?: string): Promise<any> {\n    if (section) {\n      return this.dashboardData.get(section) || null;\n    }\n    \n    return Object.fromEntries(this.dashboardData.entries());\n  }\n\n  public async getCustomChart(chartConfig: DashboardChart): Promise<any> {\n    try {\n      const now = Date.now();\n      const timeRange = this.parseTimeRange(chartConfig.timeRange);\n      const results: MetricResult[] = [];\n\n      for (const metric of chartConfig.metrics) {\n        const query: MetricQuery = {\n          metric,\n          timeRange: {\n            start: now - timeRange,\n            end: now,\n          },\n          interval: chartConfig.refreshInterval,\n        };\n\n        const result = await this.metricsCollector.queryMetrics(query);\n        results.push(...result);\n      }\n\n      return {\n        chartId: chartConfig.id,\n        title: chartConfig.title,\n        type: chartConfig.type,\n        data: results,\n        config: chartConfig.config,\n        timestamp: Date.now(),\n      };\n      \n    } catch (error) {\n      logger.error(`Failed to get custom chart ${chartConfig.id}:`, error);\n      return null;\n    }\n  }\n\n  private async getSystemMetricsSummary(timeRange: { start: number; end: number }): Promise<any> {\n    const metrics = ['system'];\n    const summaries = {};\n\n    for (const metric of metrics) {\n      summaries[metric] = await this.metricsCollector.getMetricSummary(metric, timeRange);\n    }\n\n    return summaries;\n  }\n\n  private async getCurrentSystemMetrics(): Promise<any> {\n    // Get the most recent system metrics\n    const key = 'metrics:system';\n    const latest = await this.redis.ts.get(key);\n    \n    if (latest) {\n      const [timestamp, value] = latest;\n      const detailKey = `metrics:system:${timestamp}`;\n      const detailData = await this.redis.get(detailKey);\n      \n      if (detailData) {\n        return JSON.parse(detailData);\n      }\n    }\n    \n    return null;\n  }\n\n  private async getThroughputMetrics(timeRanges: any): Promise<any> {\n    // Mock implementation - would calculate from performance metrics\n    return {\n      '1h': { avg: 150, peak: 300 },\n      '24h': { avg: 120, peak: 400 },\n      '7d': { avg: 100, peak: 500 },\n    };\n  }\n\n  private async getErrorRateMetrics(timeRanges: any): Promise<any> {\n    // Mock implementation - would calculate from performance metrics\n    return {\n      '1h': 2.1,\n      '24h': 1.8,\n      '7d': 2.3,\n    };\n  }\n\n  private async getTopEndpoints(timeRange: { start: number; end: number }): Promise<any[]> {\n    // Mock implementation - would aggregate from performance metrics\n    return [\n      { endpoint: '/api/search', requests: 1250, avgResponseTime: 45 },\n      { endpoint: '/api/workspace', requests: 890, avgResponseTime: 120 },\n      { endpoint: '/api/ai-routing', requests: 650, avgResponseTime: 200 },\n    ];\n  }\n\n  private async getModelPerformanceMetrics(timeRanges: any): Promise<any> {\n    // Mock implementation - would query AI model metrics\n    return {\n      models: [\n        { id: 'gpt-4', avgLatency: 1200, errorRate: 0.5, throughput: 45 },\n        { id: 'claude-3', avgLatency: 800, errorRate: 0.3, throughput: 60 },\n        { id: 'local-llm', avgLatency: 300, errorRate: 1.2, throughput: 120 },\n      ],\n      trends: {\n        '1h': { avgLatency: 850, errorRate: 0.7 },\n        '24h': { avgLatency: 920, errorRate: 0.8 },\n      },\n    };\n  }\n\n  private async getModelUsageMetrics(timeRanges: any): Promise<any> {\n    return {\n      distribution: {\n        'gpt-4': 45,\n        'claude-3': 35,\n        'local-llm': 20,\n      },\n      totalRequests: {\n        '1h': 2500,\n        '24h': 45000,\n        '7d': 280000,\n      },\n    };\n  }\n\n  private async getModelCostAnalysis(timeRanges: any): Promise<any> {\n    return {\n      totalCost: {\n        '1h': 12.50,\n        '24h': 245.80,\n        '7d': 1650.30,\n      },\n      costByModel: {\n        'gpt-4': 180.20,\n        'claude-3': 95.40,\n        'local-llm': 15.60,\n      },\n    };\n  }\n\n  private async getRoutingEfficiencyMetrics(timeRanges: any): Promise<any> {\n    return {\n      routingAccuracy: 94.5,\n      avgRoutingTime: 15,\n      fallbackRate: 2.1,\n    };\n  }\n\n  private async getVectorSearchPerformance(timeRanges: any): Promise<any> {\n    return {\n      avgSearchTime: {\n        '1h': 45,\n        '24h': 52,\n        '7d': 48,\n      },\n      searchVolume: {\n        '1h': 1200,\n        '24h': 28000,\n        '7d': 185000,\n      },\n    };\n  }\n\n  private async getVectorIndexHealth(): Promise<any> {\n    return {\n      indices: [\n        { name: 'text_embeddings', size: 1250000, health: 'healthy' },\n        { name: 'image_embeddings', size: 450000, health: 'healthy' },\n        { name: 'code_embeddings', size: 890000, health: 'degraded' },\n      ],\n    };\n  }\n\n  private async getQueryPatterns(timeRange: { start: number; end: number }): Promise<any> {\n    return {\n      topQueries: [\n        { query: 'machine learning', count: 450 },\n        { query: 'react components', count: 320 },\n        { query: 'data visualization', count: 280 },\n      ],\n      queryTypes: {\n        text: 60,\n        multimodal: 25,\n        image: 10,\n        code: 5,\n      },\n    };\n  }\n\n  private async getCacheEfficiencyMetrics(timeRanges: any): Promise<any> {\n    return {\n      hitRate: {\n        '1h': 78.5,\n        '24h': 82.1,\n        '7d': 79.8,\n      },\n      cacheSize: 1250000,\n      evictionRate: 5.2,\n    };\n  }\n\n  private async getActiveWorkspaceCount(): Promise<number> {\n    const workspaceKeys = await this.redis.keys('workspace:*');\n    return workspaceKeys.length;\n  }\n\n  private async getCollaborationActivity(timeRanges: any): Promise<any> {\n    return {\n      activeUsers: {\n        '1h': 45,\n        '24h': 180,\n        '7d': 520,\n      },\n      collaborationEvents: {\n        '1h': 230,\n        '24h': 1800,\n        '7d': 12500,\n      },\n    };\n  }\n\n  private async getKnowledgeGrowthMetrics(timeRanges: any): Promise<any> {\n    return {\n      nodesAdded: {\n        '1h': 25,\n        '24h': 180,\n        '7d': 1200,\n      },\n      connectionsCreated: {\n        '1h': 45,\n        '24h': 320,\n        '7d': 2100,\n      },\n    };\n  }\n\n  private async getUserEngagementMetrics(timeRanges: any): Promise<any> {\n    return {\n      sessionDuration: {\n        avg: 1800, // 30 minutes\n        median: 1200, // 20 minutes\n      },\n      actionsPerSession: {\n        avg: 15,\n        median: 12,\n      },\n    };\n  }\n\n  private async getSystemHealthSummary(): Promise<any> {\n    const healthStatuses = await this.healthChecker.getHealthStatus() as HealthStatus[];\n    \n    if (!Array.isArray(healthStatuses)) {\n      return { overall: 'unknown', services: {} };\n    }\n\n    const summary = {\n      overall: 'healthy',\n      services: {} as Record<string, string>,\n      issues: [] as string[],\n    };\n\n    let hasUnhealthy = false;\n    let hasDegraded = false;\n\n    healthStatuses.forEach(status => {\n      summary.services[status.service] = status.status;\n      \n      if (status.status === 'unhealthy') {\n        hasUnhealthy = true;\n        summary.issues.push(`${status.service} is unhealthy`);\n      } else if (status.status === 'degraded') {\n        hasDegraded = true;\n        summary.issues.push(`${status.service} is degraded`);\n      }\n    });\n\n    if (hasUnhealthy) {\n      summary.overall = 'unhealthy';\n    } else if (hasDegraded) {\n      summary.overall = 'degraded';\n    }\n\n    return summary;\n  }\n\n  private async getSlowestTraces(timeRange: { start: number; end: number }): Promise<any[]> {\n    const traces = await this.tracingService.getTraces({\n      startTime: timeRange.start,\n      endTime: timeRange.end,\n      limit: 10,\n    });\n\n    return traces\n      .sort((a, b) => b.duration - a.duration)\n      .slice(0, 5)\n      .map(trace => ({\n        traceId: trace.traceId,\n        operation: trace.operationName,\n        duration: trace.duration,\n        services: trace.services,\n        status: trace.status,\n      }));\n  }\n\n  private async getErrorTraces(timeRange: { start: number; end: number }): Promise<any[]> {\n    const traces = await this.tracingService.getTraces({\n      status: 'error',\n      startTime: timeRange.start,\n      endTime: timeRange.end,\n      limit: 10,\n    });\n\n    return traces.map(trace => ({\n      traceId: trace.traceId,\n      operation: trace.operationName,\n      duration: trace.duration,\n      services: trace.services,\n      error: trace.tags.error || 'Unknown error',\n    }));\n  }\n\n  private parseTimeRange(timeRange: string): number {\n    const unit = timeRange.slice(-1);\n    const value = parseInt(timeRange.slice(0, -1));\n    \n    switch (unit) {\n      case 'm': return value * 60 * 1000;\n      case 'h': return value * 60 * 60 * 1000;\n      case 'd': return value * 24 * 60 * 60 * 1000;\n      case 'w': return value * 7 * 24 * 60 * 60 * 1000;\n      default: return 3600000; // 1 hour default\n    }\n  }\n\n  public async stop(): Promise<void> {\n    if (this.refreshInterval) {\n      clearInterval(this.refreshInterval);\n      this.refreshInterval = null;\n    }\n\n    logger.info('Dashboard service stopped');\n  }\n}\n"
+//# sourceMappingURL=dashboard-service.js.map

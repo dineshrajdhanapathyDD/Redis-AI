@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: redis-ai-platform
+  labels:
+    name: redis-ai-platform
+    environment: production
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: redis-ai-platform-staging
+  labels:
+    name: redis-ai-platform-staging
+    environment: staging
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: redis-ai-platform-dev
+  labels:
+    name: redis-ai-platform-dev
+    environment: development

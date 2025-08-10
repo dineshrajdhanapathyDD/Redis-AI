@@ -1,0 +1,1 @@
+{"version":3,"file":"monitoring.d.ts","sourceRoot":"","sources":["../../../../src/api/rest/routes/monitoring.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAqB,MAAM,SAAS,CAAC;AACpD,OAAO,EAAE,KAAK,EAAE,MAAM,SAAS,CAAC;AAEhC,OAAO,EAAE,iBAAiB,EAAE,MAAM,8BAA8B,CAAC;AAYjE,wBAAgB,sBAAsB,CAAC,KAAK,EAAE,KAAK,EAAE,UAAU,EAAE,iBAAiB,GAAG,MAAM,CAwiB1F"}

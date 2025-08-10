@@ -1,0 +1,97 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+n;
+cors: {
+    n;
+    origin: string[];
+    n;
+    methods: string[];
+    n;
+    credentials: boolean;
+    n;
+}
+;
+n;
+transports: string[];
+n;
+pingTimeout: number;
+n;
+pingInterval: number;
+n;
+maxHttpBufferSize: number;
+n;
+allowEIO3: boolean;
+n;
+authentication: {
+    n;
+    enabled: boolean;
+    n;
+    timeout: number;
+    n;
+}
+;
+n;
+rateLimit: {
+    n;
+    enabled: boolean;
+    n;
+    maxEvents: number;
+    n;
+    windowMs: number;
+    n;
+}
+;
+n;
+n;
+nexport;
+n;
+id: string;
+n;
+email ?  : string;
+n;
+role ?  : string;
+n;
+workspaces ?  : string[];
+n;
+connectedAt: Date;
+n;
+lastActivity: Date;
+n;
+n;
+nexport;
+n;
+id: string;
+n;
+userId: string;
+n;
+socketId: string;
+n;
+rooms: Set;
+n;
+metadata: Record;
+n;
+createdAt: Date;
+n;
+lastActivity: Date;
+n;
+n;
+nexport;
+n;
+socketId: string;
+n;
+userId ?  : string;
+n;
+connectedAt: Date;
+n;
+ipAddress: string;
+n;
+userAgent: string;
+n;
+subscriptions: Set;
+n;
+intervals ?  : Map;
+n;
+n;
+nexport;
+const defaultWebSocketConfig = { n, cors: { n, origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3001'], n, methods: ['GET', 'POST'], n, credentials: true, n }, n, transports: ['websocket', 'polling'], n, pingTimeout: 60000, n, pingInterval: 25000, n, maxHttpBufferSize: 1e6, }; // 1MB\n  allowEIO3: true,\n  authentication: {\n    enabled: process.env.WS_AUTH_ENABLED === 'true',\n    timeout: 30000\n  },\n  rateLimit: {\n    enabled: process.env.WS_RATE_LIMIT_ENABLED === 'true',\n    maxEvents: 100,\n    windowMs: 60000 // 1 minute\n  }\n};\n"
+//# sourceMappingURL=types.js.map

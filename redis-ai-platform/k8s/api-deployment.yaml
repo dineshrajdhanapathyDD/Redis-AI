@@ -1,0 +1,208 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  namespace: redis-ai-platform
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  REDIS_HOST: "redis-cluster"
+  REDIS_PORT: "6379"
+  API_PORT: "3000"
+  CORS_ORIGIN: "https://ai-platform.example.com"
+  RATE_LIMIT_WINDOW: "900000"
+  RATE_LIMIT_MAX: "1000"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-secret
+  namespace: redis-ai-platform
+type: Opaque
+data:
+  REDIS_PASSWORD: cmVkaXMtYWktcGxhdGZvcm0tMjAyNA==
+  JWT_ACCESS_SECRET: YWNjZXNzLXNlY3JldC1rZXktMjAyNA==
+  JWT_REFRESH_SECRET: cmVmcmVzaC1zZWNyZXQta2V5LTIwMjQ=
+  DATABASE_URL: cG9zdGdyZXNxbDovL3VzZXI6cGFzc0BkYi5leGFtcGxlLmNvbTo1NDMyL2FpX3BsYXRmb3Jt
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-server
+  namespace: redis-ai-platform
+  labels:
+    app: api-server
+    component: backend
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: api-server
+  template:
+    metadata:
+      labels:
+        app: api-server
+        component: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: api-server
+        image: redis-ai-platform/api:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: api-config
+              key: NODE_ENV
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: api-config
+              key: LOG_LEVEL
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: api-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: api-config
+              key: REDIS_PORT
+        - name: API_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: api-config
+              key: API_PORT
+        - name: CORS_ORIGIN
+          valueFrom:
+            configMapKeyRef:
+              name: api-config
+              key: CORS_ORIGIN
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: api-secret
+              key: REDIS_PASSWORD
+        - name: JWT_ACCESS_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: api-secret
+              key: JWT_ACCESS_SECRET
+        - name: JWT_REFRESH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: api-secret
+              key: JWT_REFRESH_SECRET
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: api-secret
+              key: DATABASE_URL
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: logs
+        emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - api-server
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-server
+  namespace: redis-ai-platform
+  labels:
+    app: api-server
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 3000
+    name: http
+  selector:
+    app: api-server
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-server-hpa
+  namespace: redis-ai-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-server
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
